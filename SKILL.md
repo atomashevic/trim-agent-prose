@@ -157,8 +157,9 @@ and branch vantage ("this PR adds"), change narration and version stamps ("used 
 "for now"), review choreography ("as discussed", "the reviewer confirmed"), reviewer-addressed
 self-justification ("this is safe because…"), control-flow narration and test walkthroughs,
 planning residue ("probably fine for now"), agent chat voice ("Let me…", "Perfect!", ✅), status
-annotations. Full treatment with false-positive families:
-[references/taxonomy.md](references/taxonomy.md).
+annotations, and comment-form slop (decorative separator banners, section-header comments,
+authoring-session process commentary — with generation provenance kept). Full treatment with
+false-positive families: [references/taxonomy.md](references/taxonomy.md).
 
 ## What must survive
 
