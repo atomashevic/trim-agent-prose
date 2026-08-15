@@ -197,7 +197,11 @@ scripts/scan.sh --score <path>
 `--score` runs every battery, weights the hits by severity, normalizes by the number of lines
 scanned, and prints one number: **XX/100** with a grade band (Clean ≥ 90, Good ≥ 75, Needs a
 pass ≥ 55, Heavy slop ≥ 35, Pervasive < 35), the top weighted issues with a one-line fix for
-each, and a suggested next step. It is safe to point at a repo root: on a multi-file scope it
+each, and a suggested next step. The decay is deliberately harsh (`DESLOP_STRICTNESS`, default
+4.5): a heavily revised but agent-touched manuscript should land at 85–90 (Good), because token
+batteries see only residue — the template repetition and restatement that survive revision
+rounds are invisible to the score and come out only in the unpatterned read. Reserve 90+ for
+prose that also passes that read. It is safe to point at a repo root: on a multi-file scope it
 also prints a per-file breakdown, worst first, and the suggested next step follows the worst
 stable file rather than the aggregate — which on a whole repo is diluted by every clean line of
 code and data. Present the per-file verdicts to the user as the answer: the worst files' scores,

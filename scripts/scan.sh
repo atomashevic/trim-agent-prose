@@ -266,8 +266,13 @@ if [ "$SCORE" = 1 ]; then
     weighted="$(awk "BEGIN{print $weighted + $c * $w}")"
   done
   # Exponential decay: each unit of weighted slop per line decays the score.
-  # 100 * exp(-1.5 * weighted/lines). Clean -> 100; saturated -> near 0.
-  score="$(awk "BEGIN{ printf \"%d\", int(100*exp(-1.5*$weighted/$lines)+0.5) }")"
+  # 100 * exp(-k * weighted/lines), k = DESLOP_STRICTNESS (default 4.5).
+  # k=4.5 is calibrated so a heavily revised but agent-touched manuscript
+  # (~0.025 weighted hits/line) lands at 88-90, not 96: token batteries only
+  # see residue, and a manuscript that has passed review rounds should score
+  # Good, not Clean. The old default (1.5) scored it 96. Lower k only for early-draft triage.
+  strictness="${DESLOP_STRICTNESS:-4.5}"
+  score="$(awk -v k="$strictness" -v w="$weighted" -v l="$lines" 'BEGIN{ printf "%d", int(100*exp(-k*w/l)+0.5) }')"
 
   band="$(band_of "$score")"
 
@@ -278,7 +283,7 @@ if [ "$SCORE" = 1 ]; then
   for f in "${!FILE_WEIGHTED[@]}"; do
     fl="${FILE_LINES[$f]:-1}"
     fw="${FILE_WEIGHTED[$f]}"
-    fscore="$(awk "BEGIN{ printf \"%d\", int(100*exp(-1.5*$fw/$fl)+0.5) }")"
+    fscore="$(awk -v k="$strictness" -v w="$fw" -v l="$fl" 'BEGIN{ printf "%d", int(100*exp(-k*w/l)+0.5) }')"
     printf '%d|%s|%s\n' "$fscore" "$f" "$fl" >> "$filetab"
   done
   # Worst stable file drives the verdict and the advice. Files under 30 lines
