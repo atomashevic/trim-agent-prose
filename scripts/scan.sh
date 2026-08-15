@@ -18,7 +18,11 @@
 #   --surface all|external|internal   Which battery family to run (default: all)
 #   --only NAME[,NAME...]               Run just these batteries
 #   --score                             Streamlined audit: XX/100 + top issues +
-#                                       suggested next steps (implies --counts)
+#                                       suggested next steps (implies --counts).
+#                                       On a multi-file scope also prints a per-file
+#                                       breakdown, worst first — safe to point at a
+#                                       repo root; the advice follows the worst
+#                                       stable file, not the diluted aggregate.
 #   --list                              Show battery names and their surface
 #   --protect                           Also run PROTECT: provenance, calibration,
 #                                       statistics, and suppression markers that must
@@ -28,8 +32,8 @@
 #                                       research repo, where T1/T2/W3/P1 are timepoints,
 #                                       waves, and participant IDs)
 #
-# Extra exclusions: set TAP_EXCLUDES to a space-separated list of globs, e.g.
-#   TAP_EXCLUDES='!drafts/old/** !supplement/**' scripts/scan.sh paper/
+# Extra exclusions: set DESLOP_EXCLUDES to a space-separated list of globs, e.g.
+#   DESLOP_EXCLUDES='!drafts/old/** !supplement/**' scripts/scan.sh paper/
 
 set -uo pipefail
 
@@ -55,7 +59,7 @@ while [ $# -gt 0 ]; do
     --counts) COUNTS_ONLY=1; shift ;;
     --score) SCORE=1; COUNTS_ONLY=1; shift ;;
     --include-phase-labels) PHASE_LABELS=1; shift ;;
-    -h|--help) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "error: unknown option $1" >&2; exit 2 ;;
     *) PATHS+=("$1"); shift ;;
   esac
@@ -69,16 +73,18 @@ esac
 # are deliberately NOT excluded — they are the primary surface. What stays out is
 # build output, structured data, and third-party trees.
 EXCLUDES=(
-  --glob '!.git/**'
-  --glob '!vendor/**' --glob '!node_modules/**' --glob '!target/**'
-  --glob '!renv/**' --glob '!.venv/**' --glob '!venv/**' --glob '!**/site-packages/**'
-  --glob '!.Rproj.user/**' --glob '!**/__pycache__/**' --glob '!**/.mypy_cache/**'
+  # Directory globs are **/-prefixed: a root-anchored glob like '!.git/**'
+  # silently fails to match when the scanned path is absolute.
+  --glob '!**/.git/**'
+  --glob '!**/vendor/**' --glob '!**/node_modules/**' --glob '!**/target/**'
+  --glob '!**/renv/**' --glob '!**/.venv/**' --glob '!**/venv/**' --glob '!**/site-packages/**'
+  --glob '!**/.Rproj.user/**' --glob '!**/__pycache__/**' --glob '!**/.mypy_cache/**'
   --glob '!**/archived/**' --glob '!**/deprecated/**'
   --glob '!**/snapshots/**' --glob '!**/__snapshots__/**'
   --glob '!**/fixtures/**' --glob '!**/cassettes/**' --glob '!**/_output/**'
   # Static-site build output (Quarto, knitr, revealjs) and render caches.
   --glob '!**/_site/**' --glob '!**/*_files/**' --glob '!*.map'
-  --glob '!.pytest_cache/**' --glob '!.ruff_cache/**'
+  --glob '!**/.pytest_cache/**' --glob '!**/.ruff_cache/**'
   # LaTeX build artefacts: regenerated, never edited.
   --glob '!*.aux' --glob '!*.bbl' --glob '!*.blg' --glob '!*.out' --glob '!*.toc'
   --glob '!*.lof' --glob '!*.lot' --glob '!*.fls' --glob '!*.fdb_latexmk'
@@ -88,12 +94,12 @@ EXCLUDES=(
   --glob '!*.bib'
   --glob '!*.csv' --glob '!*.tsv' --glob '!*.parquet' --glob '!*.rds' --glob '!*.feather'
   --glob '!CHANGELOG*' --glob '!NEWS.md'
-  --glob '!**/trim-agent-prose/**'
+  --glob '!**/deslop/**'
 )
 
-# shellcheck disable=SC2206  # deliberate word splitting: TAP_EXCLUDES is a glob list
-if [ -n "${TAP_EXCLUDES:-}" ]; then
-  for g in ${TAP_EXCLUDES}; do EXCLUDES+=(--glob "$g"); done
+# shellcheck disable=SC2206  # deliberate word splitting: DESLOP_EXCLUDES is a glob list
+if [ -n "${DESLOP_EXCLUDES:-}" ]; then
+  for g in ${DESLOP_EXCLUDES}; do EXCLUDES+=(--glob "$g"); done
 fi
 
 # name|surface|rg-flags|pattern|one-line note
@@ -159,6 +165,15 @@ declare -A SEV=(
 )
 declare -A NOTES=()
 declare -a SCORE_COUNTS=()
+declare -A FILE_WEIGHTED=()
+
+band_of() {
+  if   [ "$1" -ge 90 ]; then echo "Clean"
+  elif [ "$1" -ge 75 ]; then echo "Good"
+  elif [ "$1" -ge 55 ]; then echo "Needs a pass"
+  elif [ "$1" -ge 35 ]; then echo "Heavy slop"
+  else echo "Pervasive"; fi
+}
 
 if [ "${LIST:-0}" = 1 ]; then
   printf '%-24s %s\n' "BATTERY" "SURFACE"
@@ -201,12 +216,22 @@ run_battery() {
 
   local hits count
   # shellcheck disable=SC2086  # deliberate word splitting on $flags
-  hits="$(rg -n --no-messages $flags -e "$pattern" "${EXCLUDES[@]}" -- "${PATHS[@]}" 2>/dev/null)"
+  hits="$(rg -nH --no-messages $flags -e "$pattern" "${EXCLUDES[@]}" -- "${PATHS[@]}" 2>/dev/null)"
   count="$(printf '%s' "$hits" | grep -c . || true)"
 
   SUMMARY+=("$(printf '%6s  %-24s %s' "$count" "$name" "$surface")")
   NOTES[$name]="$note"
-  [ "$SCORE" = 1 ] && SCORE_COUNTS+=("$name=$count")
+  if [ "$SCORE" = 1 ]; then
+    SCORE_COUNTS+=("$name=$count")
+    # Accumulate per-file weighted totals so the score can name the worst files.
+    local w="${SEV[$name]:-0}" file fcount
+    if [ "$count" -gt 0 ] && awk "BEGIN{exit !($w > 0)}"; then
+      while read -r fcount file; do
+        [ -n "$file" ] || continue
+        FILE_WEIGHTED[$file]="$(awk "BEGIN{print ${FILE_WEIGHTED[$file]:-0} + $fcount * $w}")"
+      done < <(printf '%s\n' "$hits" | awk -F: 'NF>1{print $1}' | sort | uniq -c)
+    fi
+  fi
 
   [ "$COUNTS_ONLY" = 1 ] && return 0
   [ "$count" = 0 ] && return 0
@@ -225,7 +250,14 @@ for b in "${BATTERIES[@]}"; do run_battery "$b"; done
 
 if [ "$SCORE" = 1 ]; then
   # Count scannable lines the same way the batteries see them (rg skips binaries).
-  lines="$(rg --count -e '' "${EXCLUDES[@]}" -- "${PATHS[@]}" 2>/dev/null | awk -F: '{s+=$NF} END {print s+0}')"
+  declare -A FILE_LINES=()
+  lines=0
+  while IFS= read -r row; do
+    f="${row%:*}"; c="${row##*:}"
+    case "$c" in ''|*[!0-9]*) continue ;; esac
+    FILE_LINES[$f]="$c"
+    lines=$(( lines + c ))
+  done < <(rg --count -H -e '' "${EXCLUDES[@]}" -- "${PATHS[@]}" 2>/dev/null)
   [ "${lines:-0}" -lt 1 ] && lines=1
   weighted=0
   for entry in "${SCORE_COUNTS[@]}"; do
@@ -237,19 +269,52 @@ if [ "$SCORE" = 1 ]; then
   # 100 * exp(-1.5 * weighted/lines). Clean -> 100; saturated -> near 0.
   score="$(awk "BEGIN{ printf \"%d\", int(100*exp(-1.5*$weighted/$lines)+0.5) }")"
 
-  # Grade band
-  if   [ "$score" -ge 90 ]; then band="Clean"
-  elif [ "$score" -ge 75 ]; then band="Good"
-  elif [ "$score" -ge 55 ]; then band="Needs a pass"
-  elif [ "$score" -ge 35 ]; then band="Heavy slop"
-  else band="Pervasive"; fi
+  band="$(band_of "$score")"
+
+  # Per-file scores. On a multi-file scope the aggregate is normalized by every
+  # scannable line — code and receipts included — so a sloppy paper can hide
+  # inside a clean average. The worst files carry the real verdict.
+  filetab="$(mktemp)"
+  for f in "${!FILE_WEIGHTED[@]}"; do
+    fl="${FILE_LINES[$f]:-1}"
+    fw="${FILE_WEIGHTED[$f]}"
+    fscore="$(awk "BEGIN{ printf \"%d\", int(100*exp(-1.5*$fw/$fl)+0.5) }")"
+    printf '%d|%s|%s\n' "$fscore" "$f" "$fl" >> "$filetab"
+  done
+  # Worst stable file drives the verdict and the advice. Files under 30 lines
+  # are listed but excluded here: one hit on a two-line caption is volatility,
+  # not a signal.
+  worst_score="$score"
+  if [ -s "$filetab" ]; then
+    ws="$(awk -F'|' '$3 >= 30' "$filetab" | sort -t'|' -k1,1n | head -1 | cut -d'|' -f1)"
+    [ -n "$ws" ] && worst_score="$ws"
+  fi
 
   echo
-  echo -e "\033[1m════ trim-agent-prose audit ════\033[0m"
+  echo -e "\033[1m════ deslop audit ════\033[0m"
   echo "Scope: ${#PATHS[@]} path(s) · $lines lines · surface: ${SURFACE}"
   echo
   echo -e "\033[1mSCORE  $score / 100   $band\033[0m"
   echo
+  # More than one file with hits, or a worst file below the aggregate band:
+  # show where the slop actually lives.
+  nhitfiles="$(grep -c . "$filetab" 2>/dev/null)"; nhitfiles="${nhitfiles:-0}"
+  if [ "${#FILE_LINES[@]}" -gt 1 ] && [ "$nhitfiles" -gt 0 ]; then
+    echo "Files with hits (worst first):"
+    sort -t'|' -k1,1n "$filetab" | head -8 | while IFS='|' read -r fs f fl; do
+      tiny=""
+      [ "$fl" -lt 30 ] && tiny="  ($fl line(s) — too small to score reliably)"
+      printf '  %3d / 100  %-14s %s%s\n' "$fs" "$(band_of "$fs")" "$f" "$tiny"
+    done
+    [ "$nhitfiles" -gt 8 ] && echo "  … $(( nhitfiles - 8 )) more file(s) with hits"
+    nclean=$(( ${#FILE_LINES[@]} - nhitfiles ))
+    [ "$nclean" -gt 0 ] && echo "  ($nclean other scanned file(s): no hits)"
+    if [ "$worst_score" -lt "$score" ] && [ "$(band_of "$worst_score")" != "$band" ]; then
+      echo
+      echo "  Note: the aggregate averages over all ${lines} scanned lines; judge each file by its own score."
+    fi
+    echo
+  fi
   echo "Top issues (weighted):"
   tmp="$(mktemp)"
   for entry in "${SCORE_COUNTS[@]}"; do
@@ -264,13 +329,16 @@ if [ "$SCORE" = 1 ]; then
   else
     echo "  (none — no battery fired)"
   fi
-  rm -f "$tmp"
+  rm -f "$tmp" "$filetab"
   echo
+  # Advice follows the worst file, not the aggregate: on a repo-wide scope the
+  # aggregate is diluted by every clean code line.
+  next="$worst_score"
   echo "Next:"
-  if   [ "$score" -ge 90 ]; then echo "  No action — prose reads human."
-  elif [ "$score" -ge 75 ]; then echo "  Apply the register-only (Bucket A) fixes above, then re-score."
-  elif [ "$score" -ge 55 ]; then echo "  Do a Bucket A pass, then re-score and re-read the densest section without a pattern."
-  elif [ "$score" -ge 35 ]; then echo "  Bucket A pass + re-read with references/structures.md in hand."
+  if   [ "$next" -ge 90 ]; then echo "  No action — prose reads human."
+  elif [ "$next" -ge 75 ]; then echo "  Apply the register-only (Bucket A) fixes above, then re-score."
+  elif [ "$next" -ge 55 ]; then echo "  Do a Bucket A pass on the worst files, then re-score and re-read the densest section without a pattern."
+  elif [ "$next" -ge 35 ]; then echo "  Bucket A pass on the worst files + re-read with references/structures.md in hand."
   else echo "  Suspect generation throughout; consider a rewrite rather than a trim."
   fi
   echo

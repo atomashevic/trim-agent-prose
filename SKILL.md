@@ -1,9 +1,9 @@
 ---
-name: trim-agent-prose
+name: deslop
 description: Trim agent-generated prose bloat from research projects — the external-facing materials (LaTeX/Quarto/R Markdown manuscripts, abstracts, response letters, cover letters, slide decks, posters, talk scripts, grant proposals, blog and press prose) and the internal artifacts around them (code comments, docstrings, READMEs, AGENTS.md/CLAUDE.md, design notes, analysis logs, data dictionaries, agent scratch files). Removes LLM register ("delve", "underscore", "plays a crucial role", "it is important to note"), throat-clearing and sandwich paragraphs, discourse-marker chains, stacked hedges, serial gratitude in response letters, chain-of-thought leakage, change narration, reasoning transcripts, dead session citations and agent chat voice — while refusing to alter numbers, citations, hedges, claim strength, data, or limitations. Use whenever the user wants a paper, draft, rebuttal, cover letter, deck, poster, talk, grant, section, abstract, README, notes, or comments cleaned up, tightened, de-slopped, cut to a word limit, or checked for AI-sounding writing; says something "reads like an AI wrote it" or is full of "slop", "fluff", or "filler"; or is preparing a submission, revision, talk, handoff, or reproducibility review. Also use before drafting new manuscript or presentation prose, to know what belongs there.
 ---
 
-# Trim Agent Prose
+# Deslop
 
 Agents leave two kinds of residue in a research project. In **external-facing materials** — the
 paper, the rebuttal, the cover letter, the slide deck, the poster, the talk, the grant — it is
@@ -197,9 +197,12 @@ scripts/scan.sh --score <path>
 `--score` runs every battery, weights the hits by severity, normalizes by the number of lines
 scanned, and prints one number: **XX/100** with a grade band (Clean ≥ 90, Good ≥ 75, Needs a
 pass ≥ 55, Heavy slop ≥ 35, Pervasive < 35), the top weighted issues with a one-line fix for
-each, and a suggested next step. Present that to the user as the answer: the score, the top two
-or three issues in plain language, and what to do next. Keep the battery list, the weights, and
-the reference-file names out of the reply unless the user asks.
+each, and a suggested next step. It is safe to point at a repo root: on a multi-file scope it
+also prints a per-file breakdown, worst first, and the suggested next step follows the worst
+stable file rather than the aggregate — which on a whole repo is diluted by every clean line of
+code and data. Present the per-file verdicts to the user as the answer: the worst files' scores,
+the top two or three issues in plain language, and what to do next. Keep the battery list, the
+weights, and the reference-file names out of the reply unless the user asks.
 
 ### Full pass (when the user asks for an edit, or wants detail)
 

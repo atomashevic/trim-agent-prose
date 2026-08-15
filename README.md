@@ -1,6 +1,6 @@
-# trim-agent-prose
+# deslop
 
-An agent skill that removes LLM prose bloat/slop from research projects, while never touching the research materials.
+An agent skill that detects and removes LLM prose bloat/slop from research projects, while never touching the research materials. *(Formerly `trim-agent-prose`.)*
 
 Agents leave two kinds of residue. 
 
@@ -35,9 +35,9 @@ It is a plain skill directory, so it works with the agents that read skills in t
 **pi** (via the package manifest in this repo):
 
 ```bash
-pi install git:github.com/<you>/trim-agent-prose
+pi install git:github.com/<you>/deslop
 # or
-pi install npm:trim-agent-prose          # if published to npm
+pi install npm:deslop          # if published to npm
 ```
 
 **Claude Code / Codex** — clone the repo and add the directory to your skills path, or symlink
@@ -46,14 +46,25 @@ pi install npm:trim-agent-prose          # if published to npm
 
 ## Usage
 
-The skill runs the `scripts/scan.sh` battery (requires [ripgrep](https://github.com/BurntSushi/ripgrep))
-to surface candidates, then relies on the agent's judgment — the batteries over-match on purpose,
-and the worst bloat is fluent prose with no flagged token, so a scan is always paired with an
-unpatterned read.
+The easy path is one command on whatever you want judged — a file, a directory, or the whole
+repo root:
 
 ```bash
-scripts/scan.sh --score paper/            # streamlined: XX/100 + top issues + next step
-scripts/scan.sh --surface external paper/
+scripts/scan.sh --score .
+```
+
+It prints a 0–100 score with a grade band, a per-file breakdown worst-first (so a sloppy
+response letter can't hide behind ten thousand clean lines of code), the top weighted issues,
+and a suggested next step. Everything else stays in the background.
+
+Under the hood it runs the recall batteries (requires
+[ripgrep](https://github.com/BurntSushi/ripgrep)) and then relies on the agent's judgment — the
+batteries over-match on purpose, and the worst bloat is fluent prose with no flagged token, so a
+scan is always paired with an unpatterned read. Narrower entry points:
+
+```bash
+scripts/scan.sh --score paper/            # score just the manuscript sources
+scripts/scan.sh --surface external paper/ # line-level hits, external prose only
 scripts/scan.sh --surface internal src/ README.md
 scripts/scan.sh --protect paper/          # provenance/statistics/calibration markers: keep these
 ```
