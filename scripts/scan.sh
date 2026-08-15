@@ -17,6 +17,8 @@
 #
 #   --surface all|external|internal   Which battery family to run (default: all)
 #   --only NAME[,NAME...]               Run just these batteries
+#   --score                             Streamlined audit: XX/100 + top issues +
+#                                       suggested next steps (implies --counts)
 #   --list                              Show battery names and their surface
 #   --protect                           Also run PROTECT: provenance, calibration,
 #                                       statistics, and suppression markers that must
@@ -41,6 +43,7 @@ SURFACE="all"
 PROTECT=0
 COUNTS_ONLY=0
 PHASE_LABELS=0
+SCORE=0
 PATHS=()
 
 while [ $# -gt 0 ]; do
@@ -50,6 +53,7 @@ while [ $# -gt 0 ]; do
     --only) ONLY="$2"; shift 2 ;;
     --protect) PROTECT=1; shift ;;
     --counts) COUNTS_ONLY=1; shift ;;
+    --score) SCORE=1; COUNTS_ONLY=1; shift ;;
     --include-phase-labels) PHASE_LABELS=1; shift ;;
     -h|--help) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "error: unknown option $1" >&2; exit 2 ;;
@@ -140,6 +144,22 @@ PHASE_BATTERY="phase-labels|internal|--hidden|\\bPhase [0-9IVX]+\\b|\\bP-[IVX]+\
 
 PROTECT_BATTERY="PROTECT|all|--hidden -i|\\bmeasured\\b|\\bestimated\\b|\\bsimulated\\b|\\bpilot\\b|pre-?registered|\\bexploratory\\b|\\bconfirmatory\\b|post[- ]hoc|sensitivity analys|\\bseed\\b|\\bn ?= ?[0-9]|\\bp ?[<=>] ?[0-9.]|\\b(95|89|90|99) ?% ?(CI|credible)|\\bCI \\[|\\bd ?= ?[-0-9.]|\\bSD ?= ?[0-9.]|exclu(ded|sion)|underpowered|\\bassum(es|ption)|\\blimitation|doi:|arxiv|noqa|type: *ignore|pragma: *no cover|nolint|Provenance, statistics, calibration, limitations, and suppression markers — these must survive the trim. Cross-check before deleting anything on or near these lines"
 
+# Severity weights for scoring. PROTECT and phase-labels are not slop and get no entry.
+declare -A SEV=(
+  [overclaim]=3 [decision-passive]=3 [vague-change-claim]=2.5 [vague-declarative]=2.5
+  [false-agency]=2
+  [llm-lexicon]=1.5 [hedge-stacking]=1.5 [significance-ambiguity]=1.5 [obsequious]=1.5
+  [discourse-chains]=1 [boilerplate-echo]=1 [binary-contrast]=1 [emphasis-crutch]=1
+  [meta-commentary]=1 [wh-opener]=1 [deck-narration]=1 [dead-citations]=1 [pr-vantage]=1
+  [self-justification]=1 [planning-residue]=1 [chat-voice]=1 [register]=1
+  [adverb-crutch]=0.8 [empty-intensifier]=0.8 [filler-hedge]=0.8 [change-narration]=0.8
+  [review-choreography]=0.8 [narration]=0.8
+  [version-stamps]=0.5 [emoji]=0.5 [emphasis]=0.5 [status-annotations]=0.5
+  [decorative-banner]=0.5 [process-comment]=0.5
+)
+declare -A NOTES=()
+declare -a SCORE_COUNTS=()
+
 if [ "${LIST:-0}" = 1 ]; then
   printf '%-24s %s\n' "BATTERY" "SURFACE"
   for b in "${BATTERIES[@]}"; do
@@ -185,6 +205,8 @@ run_battery() {
   count="$(printf '%s' "$hits" | grep -c . || true)"
 
   SUMMARY+=("$(printf '%6s  %-24s %s' "$count" "$name" "$surface")")
+  NOTES[$name]="$note"
+  [ "$SCORE" = 1 ] && SCORE_COUNTS+=("$name=$count")
 
   [ "$COUNTS_ONLY" = 1 ] && return 0
   [ "$count" = 0 ] && return 0
@@ -201,7 +223,62 @@ for b in "${BATTERIES[@]}"; do run_battery "$b"; done
 [ "$PHASE_LABELS" = 1 ] && run_battery "$PHASE_BATTERY"
 [ "$PROTECT" = 1 ] && run_battery "$PROTECT_BATTERY"
 
-printf '\n\033[1m── Summary\033[0m\n'
+if [ "$SCORE" = 1 ]; then
+  # Count scannable lines the same way the batteries see them (rg skips binaries).
+  lines="$(rg --count -e '' "${EXCLUDES[@]}" -- "${PATHS[@]}" 2>/dev/null | awk -F: '{s+=$NF} END {print s+0}')"
+  [ "${lines:-0}" -lt 1 ] && lines=1
+  weighted=0
+  for entry in "${SCORE_COUNTS[@]}"; do
+    n="${entry%%=*}"; c="${entry##*=}"
+    w="${SEV[$n]:-0}"
+    weighted="$(awk "BEGIN{print $weighted + $c * $w}")"
+  done
+  # Exponential decay: each unit of weighted slop per line decays the score.
+  # 100 * exp(-1.5 * weighted/lines). Clean -> 100; saturated -> near 0.
+  score="$(awk "BEGIN{ printf \"%d\", int(100*exp(-1.5*$weighted/$lines)+0.5) }")"
+
+  # Grade band
+  if   [ "$score" -ge 90 ]; then band="Clean"
+  elif [ "$score" -ge 75 ]; then band="Good"
+  elif [ "$score" -ge 55 ]; then band="Needs a pass"
+  elif [ "$score" -ge 35 ]; then band="Heavy slop"
+  else band="Pervasive"; fi
+
+  echo
+  echo -e "\033[1m════ trim-agent-prose audit ════\033[0m"
+  echo "Scope: ${#PATHS[@]} path(s) · $lines lines · surface: ${SURFACE}"
+  echo
+  echo -e "\033[1mSCORE  $score / 100   $band\033[0m"
+  echo
+  echo "Top issues (weighted):"
+  tmp="$(mktemp)"
+  for entry in "${SCORE_COUNTS[@]}"; do
+    n="${entry%%=*}"; c="${entry##*=}"; w="${SEV[$n]:-0}"
+    awk -v n="$n" -v c="$c" -v w="$w" 'BEGIN{ if(w>0 && c>0) printf "%.2f|%s|%d|%.1f\n", c*w, n, c, w }' >> "$tmp"
+  done
+  if [ -s "$tmp" ]; then
+    sort -t'|' -k1,1rn "$tmp" | head -5 | while IFS='|' read -r val name count weight; do
+      printf '  %-22s %4d hits × %.1f  = %.1f\n' "$name" "$count" "$weight" "$val"
+      echo "      → ${NOTES[$name]}"
+    done
+  else
+    echo "  (none — no battery fired)"
+  fi
+  rm -f "$tmp"
+  echo
+  echo "Next:"
+  if   [ "$score" -ge 90 ]; then echo "  No action — prose reads human."
+  elif [ "$score" -ge 75 ]; then echo "  Apply the register-only (Bucket A) fixes above, then re-score."
+  elif [ "$score" -ge 55 ]; then echo "  Do a Bucket A pass, then re-score and re-read the densest section without a pattern."
+  elif [ "$score" -ge 35 ]; then echo "  Bucket A pass + re-read with references/structures.md in hand."
+  else echo "  Suspect generation throughout; consider a rewrite rather than a trim."
+  fi
+  echo
+  echo "Caveats: batteries over-match — every hit needs judgment. Small scopes (<100 lines) are volatile. Run scan.sh without --score for line-level detail."
+  exit 0
+fi
+
+printf '\n\033[1m── Summary\033[0m\n' 
 printf '%s\n' "${SUMMARY[@]}"
 printf '\nA zero-hit battery proves nothing until you have seen it match.\n'
 printf 'The densest prose in scope still needs an unpatterned read.\n'

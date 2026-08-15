@@ -185,6 +185,24 @@ An unaided pass deletes these. They are keeps.
 
 ## Workflow
 
+### Streamlined audit (the default for a user request)
+
+When the user asks to audit, check, score, or "how sloppy is this", run the audit and report the
+result compactly — the user asked for a verdict, not the machinery:
+
+```bash
+scripts/scan.sh --score <path>
+```
+
+`--score` runs every battery, weights the hits by severity, normalizes by the number of lines
+scanned, and prints one number: **XX/100** with a grade band (Clean ≥ 90, Good ≥ 75, Needs a
+pass ≥ 55, Heavy slop ≥ 35, Pervasive < 35), the top weighted issues with a one-line fix for
+each, and a suggested next step. Present that to the user as the answer: the score, the top two
+or three issues in plain language, and what to do next. Keep the battery list, the weights, and
+the reference-file names out of the reply unless the user asks.
+
+### Full pass (when the user asks for an edit, or wants detail)
+
 1. **Confirm scope, mode, and limits** in one line before a large pass, so a misread scope costs
    a sentence rather than a diff.
 2. **Scan for candidates.** `scripts/scan.sh <path>` runs the recall batteries.
@@ -211,8 +229,9 @@ An unaided pass deletes these. They are keeps.
 
 ## Quick score (optional)
 
-For a passage, a section, or a whole draft under review, rate 1–10 on each dimension — adapted
-from stop-slop — and say which dimension drives the score:
+`scripts/scan.sh --score` gives the deterministic 0–100 score. For a subjective cross-check on a
+passage, rate 1–10 on each dimension — adapted from stop-slop — and say which dimension drives
+the score:
 
 | Dimension | Question |
 |---|---|

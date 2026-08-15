@@ -52,6 +52,7 @@ and the worst bloat is fluent prose with no flagged token, so a scan is always p
 unpatterned read.
 
 ```bash
+scripts/scan.sh --score paper/            # streamlined: XX/100 + top issues + next step
 scripts/scan.sh --surface external paper/
 scripts/scan.sh --surface internal src/ README.md
 scripts/scan.sh --protect paper/          # provenance/statistics/calibration markers: keep these
