@@ -1,4 +1,4 @@
-# deslop
+# deslop my research
 
 An agent skill that detects and removes LLM prose bloat/slop from research projects, while never touching the research materials. *(Formerly `trim-agent-prose`.)*
 
