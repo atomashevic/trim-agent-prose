@@ -1,12 +1,14 @@
 # trim-agent-prose
 
-An agent skill that removes LLM prose bloat from research projects — while never touching the
-science.
+An agent skill that removes LLM prose bloat/slop from research projects, while never touching the research materials.
 
-Agents leave two kinds of residue. In **external-facing materials** — the manuscript, the slide
-deck, the poster, the talk, the grant proposal — it is register bloat: throat-clearing, vogue
-vocabulary, uniform sandwich paragraphs, discourse-marker chains, hedges stacked until they blur.
-In the **internal artifacts** around them — code comments, docstrings, READMEs, `AGENTS.md`, design
+Agents leave two kinds of residue. 
+
+- In **external-facing materials** (the manuscript, the slide
+deck, the poster, the talk, the grant proposal) it is register bloat: throat-clearing, vogue
+vocabulary, defensive language, uniform sandwich paragraphs, discourse-marker chains, etc.
+
+- In the **internal artifacts** around them — code comments, docstrings, READMEs, `AGENTS.md`, design
 notes, analysis logs — it is chain-of-thought leakage: prose whose vantage is the authoring
 session rather than the project.
 
@@ -14,8 +16,6 @@ This skill teaches an agent to find both, sort every proposed edit into a *regis
 (safe to apply) and a *meaning-adjacent* bucket (proposed, never silently applied), and to refuse
 to touch the load-bearing parts: numbers, citations, quotations, math, limitations, provenance.
 
-The goal is **not** fewer words. A shorter paragraph that lost a qualifier, a limitation, or a
-provenance marker is a worse paper — and in a manuscript that error can end up in print.
 
 ## What it covers
 
