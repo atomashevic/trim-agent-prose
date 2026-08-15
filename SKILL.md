@@ -21,13 +21,15 @@ manuscript that error can end up in print.
 This is guidance, not a script. The batteries find candidates; you judge them.
 
 Register standards adapted from [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)
-(`.agents/skills/dsh-prose-standard`, `.agents/skills/dsh-trim-cot-leakage`).
+(`.agents/skills/dsh-prose-standard`, `.agents/skills/dsh-trim-cot-leakage`). Rhetorical-structure
+classes and the scoring heuristic adapted from [hardikpandya/stop-slop](https://github.com/hardikpandya/stop-slop)
+(MIT), reworked with scientific-register false positives.
 
 ## The two surfaces
 
 | Surface | Files | Guidance |
 |---|---|---|
-| **External** — prose the outside world reads | manuscripts (`*.tex`, `.qmd`/`.Rmd`/`.md`), abstracts, response letters, cover letters, grant proposals — and slide decks, posters, talk scripts, blog and press prose | [references/manuscript.md](references/manuscript.md) · [references/presentations.md](references/presentations.md) |
+| **External** — prose the outside world reads | manuscripts (`*.tex`, `.qmd`/`.Rmd`/`.md`), abstracts, response letters, cover letters, grant proposals — and slide decks, posters, talk scripts, blog and press prose | [references/manuscript.md](references/manuscript.md) · [references/presentations.md](references/presentations.md) · [references/structures.md](references/structures.md) |
 | **Internal** — comments and artifacts | code comments and docstrings, `%` comments inside `.tex`, READMEs, `AGENTS.md`/`CLAUDE.md`, design and decision notes, analysis logs, data dictionaries, speaker notes, agent scratch files | [references/taxonomy.md](references/taxonomy.md) |
 
 Both surfaces share the rules below. `references/examples.md` calibrates every class with
@@ -141,6 +143,15 @@ agenda and recap slides that over-promise, empty intensifiers in bullets, meta-t
 throat-clearing in talk scripts, the abstract restated on a poster, clickbait hedging in blog and
 press prose. Full treatment: [references/presentations.md](references/presentations.md).
 
+**Rhetorical structures** — binary contrasts ("not X but Y"), negative listing ("not a toolkit,
+not a benchmark"), dramatic fragmentation, rhetorical setups ("What if…?", "Think about it:"),
+false agency ("the data tells us", "the analysis decided"), narrator-from-a-distance ("people
+tend to…"), vague declaratives ("the implications are significant"), emphasis crutches ("full
+stop."), meta-commentary ("let me walk you through"), Wh- sentence starters, adverb crutches
+("truly", "essentially"), and decision-hiding passive voice. Each class carries its scientific
+false positives — the register words that must survive. Full treatment:
+[references/structures.md](references/structures.md).
+
 **Internal surfaces** — dead session citations (`(decision 7)`, `design §4.7`, phase labels), PR
 and branch vantage ("this PR adds"), change narration and version stamps ("used to", "no longer",
 "for now"), review choreography ("as discussed", "the reviewer confirmed"), reviewer-addressed
@@ -196,6 +207,22 @@ An unaided pass deletes these. They are keeps.
 7. **Deliver reviewably.** Commit Bucket A separately from Bucket B and both separately from
    content changes. For anything beyond a handful of manuscript edits, generate a marked-up PDF —
    `latexdiff old.tex new.tex > diff.tex` — since that is how most co-authors want to review.
+
+## Quick score (optional)
+
+For a passage, a section, or a whole draft under review, rate 1–10 on each dimension — adapted
+from stop-slop — and say which dimension drives the score:
+
+| Dimension | Question |
+|---|---|
+| Directness | Statements, or announcements of statements? |
+| Rhythm | Varied cadence, or uniform sentences and three-item lists? |
+| Trust | Respects the reader's intelligence — no manufactured weight? |
+| Authenticity | Reads like the author at their most direct? |
+| Density | Anything cuttable that carries no proposition? |
+
+Below 35/50, the passage needs a Bucket A pass; below 20/50, suspect structure more than
+vocabulary and re-read with [references/structures.md](references/structures.md) in hand.
 
 Two verification points that catch real mistakes. **Docstrings, CLI help, and error text are
 behavior** when anything reads them at runtime; treat a reword there as a behavior change. And in

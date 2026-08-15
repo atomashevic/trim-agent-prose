@@ -24,6 +24,10 @@ to touch the load-bearing parts: numbers, citations, quotations, math, limitatio
 | **External** | manuscripts (LaTeX / Quarto / R Markdown), abstracts, response letters, cover letters, **slide decks**, **posters**, **talk scripts**, **grant proposals**, blog and press prose |
 | **Internal** | code comments and docstrings, `%` comments in `.tex`, READMEs, `AGENTS.md`/`CLAUDE.md`, design and decision notes, analysis logs, data dictionaries, agent scratch files |
 
+Plus **rhetorical structures** on both surfaces: binary contrasts, negative listing, false
+agency, vague declaratives, emphasis crutches, meta-commentary, Wh- openers, adverb crutches,
+and decision-hiding passive — each with its scientific-register false positives.
+
 ## Install
 
 It is a plain skill directory, so it works with the agents that read skills in this format.
@@ -69,7 +73,10 @@ See `SKILL.md` for the full rules, and `references/` for the calibration example
 
 The register standards adapt
 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) (MIT) —
-`.agents/skills/dsh-prose-standard` and `.agents/skills/dsh-trim-cot-leakage`.
+`.agents/skills/dsh-prose-standard` and `.agents/skills/dsh-trim-cot-leakage`. The rhetorical-
+structure classes and scoring heuristic adapt
+[hardikpandya/stop-slop](https://github.com/hardikpandya/stop-slop) (MIT), reworked with
+scientific-register false positives.
 
 ## License
 

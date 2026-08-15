@@ -8,8 +8,9 @@ This file covers **internal surfaces**: code comments and docstrings, `%` commen
 `.tex` file, READMEs, `AGENTS.md`/`CLAUDE.md`, design and decision notes, analysis logs, data
 dictionaries and codebooks, speaker notes, and agent scratch files. For the external surfaces —
 the paper, the rebuttal, the cover letter, the grant, and the slide deck, poster, talk, and blog
-post — see [manuscript.md](manuscript.md) and [presentations.md](presentations.md), which cover
-the same instinct applied to prose that is the deliverable rather than the scaffolding.
+post — see [manuscript.md](manuscript.md), [presentations.md](presentations.md), and
+[structures.md](structures.md), which cover the same instinct applied to prose that is the
+deliverable rather than the scaffolding.
 
 Classes 1–8 are rare in manuscript prose and common in everything around it. Class 9 (inflated
 register) is the one that appears on both surfaces, and the manuscript treatment of it is
@@ -202,7 +203,10 @@ status, and status annotations rot.
 The one class that appears on both surfaces. What follows is the internal-artifact version — a
 README or a module header written in journal voice. For the manuscript version, including the LLM
 lexicon, the structural tells, and the domain-term false positives, see
-[manuscript.md](manuscript.md#llm-register-in-academic-prose).
+[manuscript.md](manuscript.md#llm-register-in-academic-prose). For the sentence-architecture
+family — false agency in comments ("the parser chooses to…" when a human wrote the branch),
+narrator-from-a-distance in READMEs ("one might wonder…"), and the rest — see
+[structures.md](structures.md).
 
 Prose that sounds authoritative while asserting little:
 

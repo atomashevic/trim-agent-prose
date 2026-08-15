@@ -19,6 +19,7 @@ skill's own directory; the wording here is not a license elsewhere.
 - [Response letters](#response-letters)
 - [Cover letters](#cover-letters)
 - [Presentations and outreach](#presentations-and-outreach)
+- [Rhetorical structures](#rhetorical-structures)
 
 **Internal surfaces**
 
@@ -539,6 +540,100 @@ this is **essential** for **reproducibility**."
 **Fixed:** "Set the seed before any stochastic operation; unseeded runs are not reproducible."
 
 One clause changes behavior and it does not need bold to do it.
+
+---
+
+## Rhetorical structures
+
+### Binary contrast that postures
+
+**Leaked:** "This paper is not about yet another benchmark. It is about measurement."
+
+**Fixed:** "This paper contributes a measurement framework."
+
+The negation was a runway; the claim stands without it.
+
+### Binary contrast that compares — keep
+
+**Keep:** "The effect was not significant in the pooled sample but was in the largest cohort."
+
+The negation compares two real estimates; a reader needs both halves.
+
+### Negative listing
+
+**Leaked:** "Not a toolkit. Not a benchmark. Not a survey. A validation framework."
+
+**Fixed:** "We contribute a validation framework."
+
+### False agency, rhetorical
+
+**Leaked:** "The analysis decided to exclude participants with missing covariates."
+
+**Fixed:** "We excluded participants with missing covariates."
+
+Name the human. The analysis does not decide; the analyst does.
+
+### False agency, scientific register — keep
+
+**Keep:** "The data suggest the effect is limited to the training cohort." / "The model predicts
+log-odds of 1.4 for held-out verbs."
+
+"Suggest" and "predict" are the licensed agency verbs of the field; in machine learning the
+model literally predicts. Do not homogenize registered usage into active human voice.
+
+### Vague declarative
+
+**Leaked:** "These findings have important implications for practice."
+
+**Fixed:** "These findings suggest hiring panels should weight calibration over confidence."
+
+Complete the sentence with "for whom, and what specifically"; if you cannot, the sentence was
+announcing, not saying.
+
+### Emphasis crutch
+
+**Leaked:** "The gap is real. Make no mistake."
+
+**Fixed:** (delete the second sentence)
+
+### Meta-commentary
+
+**Leaked:** "Let me walk you through the three failure modes."
+
+**Fixed:** "The three failure modes are…"
+
+### Wh- opener crutch
+
+**Leaked:** "What makes this hard is that embeddings are trained per-corpus."
+
+**Fixed:** "Embeddings are trained per-corpus, which makes transfer hard."
+
+### Adverb crutch
+
+**Leaked:** "The method is truly simple and genuinely scalable."
+
+**Fixed:** "The method is a two-pass scan over the vocabulary."
+
+### Adverb that is the claim — keep
+
+**Keep:** "The estimate is approximately 0.31" and "significantly larger than the null".
+
+*Approximately* is measurement; *significantly* is statistical. The crutch list is the empty
+set: truly, really, essentially, fundamentally, actually, simply, notably, importantly…
+
+### Decision-hiding passive
+
+**Leaked:** "It was decided that the pilot would use six countries."
+
+**Fixed:** "We fixed the pilot at six countries."
+
+### Methodological passive — keep
+
+**Keep:** "Participants were recruited through the ESS sampling frame; models were trained for 30
+epochs."
+
+Procedure and measurement stay passive — that is the registered convention. Decisions name
+their actor.
 
 ---
 

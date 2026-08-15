@@ -1,6 +1,6 @@
 {
   "name": "trim-agent-prose",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Agent skill: remove LLM prose bloat from research projects — manuscripts, slide decks, posters, talks, grants, and the internal repo artifacts (code comments, READMEs, notes, logs) around them.",
   "keywords": [
     "pi-package",

@@ -74,7 +74,9 @@ Not "be careful with" — never, in any bucket, without the author explicitly as
 ## LLM register in academic prose
 
 The vocabulary that marks a paragraph as machine-drafted. Each is a signal, not a verdict: check
-whether the word is doing work in this sentence before cutting.
+whether the word is doing work in this sentence before cutting. For the sentence-architecture
+family — binary contrasts, false agency, vague declaratives, and the rest — see
+[structures.md](structures.md).
 
 **Vogue verbs and nouns** — delve, underscore, showcase, leverage, utilize, facilitate,
 encompass, garner; realm, landscape, tapestry, myriad, avenue, cornerstone, paradigm (outside its
